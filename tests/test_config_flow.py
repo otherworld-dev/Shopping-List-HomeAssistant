@@ -1,5 +1,6 @@
 """Setting the integration up, signing in again, and its options."""
 
+import asyncio
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -159,6 +160,44 @@ async def test_options_hide_lists_and_set_label(hass: HomeAssistant) -> None:
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.options == {CONF_HIDDEN_LISTS: [5], CONF_VIA_LABEL: "Kitchen"}
+
+
+async def test_options_still_save_after_a_hidden_list_is_deleted(hass: HomeAssistant) -> None:
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="adam@cloud.example.com",
+        data={CONF_SERVER: SERVER, CONF_LOGIN_NAME: "adam", CONF_APP_PASSWORD: "secret"},
+        options={CONF_HIDDEN_LISTS: [99], CONF_VIA_LABEL: "Home Assistant"},
+    )
+    entry.add_to_hass(hass)
+
+    with patch(f"{FLOW}.ShoppingListApi.async_lists", AsyncMock(return_value=[ShoppingListInfo(4, "Weekly shop")])):
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        # Left at its default, the gone list must not fail validation
+        result = await hass.config_entries.options.async_configure(result["flow_id"], {CONF_VIA_LABEL: "Kitchen"})
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.options == {CONF_HIDDEN_LISTS: [], CONF_VIA_LABEL: "Kitchen"}
+
+
+async def test_abandoned_sign_in_stops_waiting(hass: HomeAssistant) -> None:
+    poll = AsyncMock(return_value=None)
+    with (
+        patch(f"{FLOW}.login_flow.async_start", AsyncMock(return_value=START)),
+        patch(f"{FLOW}.login_flow.async_poll", poll),
+        patch(f"{FLOW}.POLL_INTERVAL", 0.01),
+    ):
+        result = await _to_method_menu(hass)
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {"next_step_id": "auth"})
+        await asyncio.sleep(0.05)
+        assert poll.await_count > 0
+
+        hass.config_entries.flow.async_abort(result["flow_id"])
+        await asyncio.sleep(0.02)
+        count = poll.await_count
+        await asyncio.sleep(0.05)
+
+    assert poll.await_count == count
 
 
 async def test_empty_label_is_kept_empty(hass: HomeAssistant) -> None:

@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import time
 from collections.abc import Mapping
+from contextlib import suppress
 from typing import Any
 
 import probatio
@@ -16,6 +17,7 @@ from homeassistant.config_entries import (
     OptionsFlowWithReload,
 )
 from homeassistant.core import callback
+from homeassistant.data_entry_flow import UnknownFlow
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
     SelectOptionDict,
@@ -66,6 +68,7 @@ class NextcloudShoppingListConfigFlow(ConfigFlow, domain=DOMAIN):
         self._credentials: Credentials | None = None
         self._timed_out = False
         self._manual = False
+        self._wait_task: asyncio.Task[None] | None = None
 
     @staticmethod
     @callback
@@ -101,7 +104,9 @@ class NextcloudShoppingListConfigFlow(ConfigFlow, domain=DOMAIN):
                     errors={"base": "cannot_connect"},
                 )
             # Not eager: the wait must not finish before this step is even shown
-            self.hass.async_create_background_task(self._async_wait_for_login(), f"{DOMAIN} login", eager_start=False)
+            self._wait_task = self.hass.async_create_background_task(
+                self._async_wait_for_login(), f"{DOMAIN} login", eager_start=False
+            )
         return self.async_external_step(step_id="auth", url=self._start.login_url)
 
     async def _async_wait_for_login(self) -> None:
@@ -118,7 +123,14 @@ class NextcloudShoppingListConfigFlow(ConfigFlow, domain=DOMAIN):
                 break
         else:
             self._timed_out = True
-        await self.hass.config_entries.flow.async_configure(flow_id=self.flow_id)
+        with suppress(UnknownFlow):
+            await self.hass.config_entries.flow.async_configure(flow_id=self.flow_id)
+
+    @callback
+    def async_remove(self) -> None:
+        """Stop waiting for access when the dialog is closed."""
+        if self._wait_task is not None:
+            self._wait_task.cancel()
 
     async def async_step_login_timeout(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         return self.async_abort(reason="login_timeout")
@@ -195,7 +207,9 @@ class OptionsFlowHandler(OptionsFlowWithReload):
         except ApiError:
             return self.async_abort(reason="cannot_connect")
 
-        hidden = [str(list_id) for list_id in entry.options.get(CONF_HIDDEN_LISTS, [])]
+        # Only lists that still exist: a deleted one can't be shown, so it could never be unticked
+        existing = {info.id for info in lists}
+        hidden = [str(list_id) for list_id in entry.options.get(CONF_HIDDEN_LISTS, []) if list_id in existing]
         schema = probatio.Schema(
             {
                 probatio.Optional(CONF_HIDDEN_LISTS, default=hidden): SelectSelector(
