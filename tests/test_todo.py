@@ -1,5 +1,7 @@
 """Each shopping list as a Home Assistant to-do list."""
 
+from unittest.mock import patch
+
 import pytest
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
@@ -100,8 +102,6 @@ async def test_move_reorders_open_items(hass: HomeAssistant, entry, server: Fake
 async def test_a_refused_change_shows_the_servers_message(hass: HomeAssistant, entry, server: FakeServer) -> None:
     async def refuse(_api, *args):
         raise ApiRefused("No permission")
-
-    from unittest.mock import patch
 
     with patch("custom_components.nextcloud_shopping_list.api.ShoppingListApi.async_check", refuse), pytest.raises(
         HomeAssistantError, match="No permission"
