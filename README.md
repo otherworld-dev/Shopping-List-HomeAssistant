@@ -56,7 +56,9 @@ The sentences work with Home Assistant's own voice assistant and with AI assista
 
 You say a list's name as it is in the app. To say "shopping list" for a list called "Weekly shop", give it an alias: **Settings → Voice assistants → Expose**, choose the list and add the alias. The integration picks it up straight away.
 
-You need an alias as well when two of your lists have the same name, for example your own "Shopping" and one shared with you, as you otherwise can't tell them apart by voice.
+If two of your lists have the same name, for example your own "Shopping" and one shared with you, a command naming them changes neither and says so. Give one of them an alias and take the list's own name off its voice names, in the same place.
+
+If two Nextcloud accounts are set up and both can see a shared list, it is still one list, so checking off, changing or removing only happens once. Home Assistant's own add sentence refuses a name two of its to-do lists share, so to add to that list by voice, hide it in one of the accounts' options.
 
 ### Home Assistant's own shopping list
 

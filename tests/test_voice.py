@@ -114,6 +114,71 @@ async def test_two_entries_both_register(hass: HomeAssistant, server: FakeServer
     assert server.calls == [("check", 4, 7, True), ("check", 5, 9, True)]
 
 
+async def test_same_name_lists_are_left_alone(hass: HomeAssistant, server: FakeServer) -> None:
+    server.lists = [ShoppingListInfo(4, "Shopping"), ShoppingListInfo(5, "Shopping")]
+    server.items[5] = [make_item(9, "Milk", list_id=5)]
+    entry = make_entry(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    speech = await say(hass, "remove milk from shopping")
+
+    assert speech.startswith("There's more than one list called that")
+    assert server.calls == []
+
+
+async def test_a_shared_list_seen_by_two_accounts_acts_once(hass: HomeAssistant, server: FakeServer) -> None:
+    first = make_entry(hass)
+    make_entry(hass, login="sam")
+    assert await hass.config_entries.async_setup(first.entry_id)
+    await hass.async_block_till_done()
+
+    assert await say(hass, "check off milk on weekly shop") == "Checked off Milk."
+    assert server.calls == [("check", 4, 7, True)]
+
+
+async def test_removing_the_lists_own_name(hass: HomeAssistant, entry, server: FakeServer, entity_registry: er.EntityRegistry) -> None:
+    entity_registry.async_update_entity(ENTITY, aliases=["shopping list"])
+    await hass.async_block_till_done()
+
+    await say(hass, "check off milk on weekly shop")
+    assert server.calls == []
+    assert await say(hass, "check off milk on shopping list") == "Checked off Milk."
+
+
+async def test_keeping_the_lists_own_name_with_an_alias(hass: HomeAssistant, entry, server: FakeServer, entity_registry: er.EntityRegistry) -> None:
+    entity_registry.async_update_entity(ENTITY, aliases=[er.COMPUTED_NAME, "shopping list"])
+    await hass.async_block_till_done()
+
+    assert await say(hass, "check off milk on weekly shop") == "Checked off Milk."
+    assert await say(hass, "check off bananas on shopping list") == "Checked off Bananas."
+
+
+async def test_a_room_named_list_leaves_device_commands_alone(hass: HomeAssistant, server: FakeServer) -> None:
+    server.lists = [ShoppingListInfo(4, "Kitchen")]
+    entry = make_entry(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    speech = await say(hass, "set the brightness to 50 percent in the kitchen")
+    assert server.calls == []
+    assert not speech.startswith("I couldn't find")
+
+    assert await say(hass, "change milk to three pints in the kitchen list") == "Milk is now 1."
+    assert await say(hass, "change milk to three pints on kitchen") == "Milk is now 1."
+
+
+async def test_apostrophes_can_be_said(hass: HomeAssistant, server: FakeServer) -> None:
+    server.lists = [ShoppingListInfo(4, "Mum's list")]
+    entry = make_entry(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert await say(hass, "check off milk on mum's list") == "Checked off Milk."
+    assert await say(hass, "check off milk on mum’s list") == "Checked off Milk."
+    assert await say(hass, "check off milk on mums list") == "Checked off Milk."
+
+
 async def test_unload_unregisters(hass: HomeAssistant, entry, server: FakeServer) -> None:
     assert await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
