@@ -8,6 +8,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
 
 from custom_components.nextcloud_shopping_list.api import ApiRefused
+from custom_components.nextcloud_shopping_list.const import CONF_HIDDEN_LISTS
 from custom_components.nextcloud_shopping_list.models import ShoppingListInfo
 
 from .common import FakeServer, make_entry, make_item
@@ -127,6 +128,21 @@ async def test_deleted_list_removes_entity(hass: HomeAssistant, entry, server: F
 
     assert hass.states.get(ENTITY) is None
     assert entity_registry.async_get(ENTITY) is None
+
+
+async def test_hidden_list_entity_is_removed_on_setup(hass: HomeAssistant, server: FakeServer, entity_registry: er.EntityRegistry) -> None:
+    server.lists = [ShoppingListInfo(4, "Weekly shop"), ShoppingListInfo(5, "Party")]
+    entry = make_entry(hass, {CONF_HIDDEN_LISTS: [5]})
+    # Left from before the list was hidden, or deleted while Home Assistant was down
+    entity_registry.async_get_or_create(
+        "todo", "nextcloud_shopping_list", "adam@cloud.example.com_5", config_entry=entry, suggested_object_id="party"
+    )
+
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert entity_registry.async_get("todo.party") is None
+    assert entity_registry.async_get(ENTITY) is not None
 
 
 async def test_renamed_list_renames_entity(hass: HomeAssistant, entry, server: FakeServer) -> None:

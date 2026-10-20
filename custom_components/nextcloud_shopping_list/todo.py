@@ -32,6 +32,13 @@ async def async_setup_entry(
     coordinator = entry.runtime_data.coordinator
     known: set[int] = set()
 
+    # Lists hidden since, or deleted while Home Assistant was down, leave nothing behind
+    registry = er.async_get(hass)
+    current = {list_unique_id(entry, list_id) for list_id in (coordinator.data.lists if coordinator.data else {})}
+    for entity in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if entity.domain == Platform.TODO and entity.unique_id not in current:
+            registry.async_remove(entity.entity_id)
+
     @callback
     def sync_lists() -> None:
         """Add a to-do list for each new list, and drop the ones that are gone or hidden."""
