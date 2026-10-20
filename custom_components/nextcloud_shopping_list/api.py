@@ -52,6 +52,10 @@ class ShoppingListApi:
         # Sent with every change, so the list shows "Home Assistant" against it
         self._via = via_label or None
 
+    @property
+    def via_label(self) -> str | None:
+        return self._via
+
     async def _request(self, method: str, path: str, *, body: dict[str, Any] | None = None, write: bool = False) -> Any:
         headers = dict(self._headers)
         if write and self._via:
