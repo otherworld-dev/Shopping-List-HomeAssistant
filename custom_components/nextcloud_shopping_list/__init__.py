@@ -10,7 +10,7 @@ from .api import ShoppingListApi
 from .const import CONF_APP_PASSWORD, CONF_LOGIN_NAME, CONF_SERVER, CONF_VIA_LABEL, DEFAULT_VIA_LABEL
 from .coordinator import RuntimeData, ShoppingListConfigEntry, ShoppingListCoordinator
 
-PLATFORMS: list[Platform] = []
+PLATFORMS: list[Platform] = [Platform.TODO]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ShoppingListConfigEntry) -> bool:
