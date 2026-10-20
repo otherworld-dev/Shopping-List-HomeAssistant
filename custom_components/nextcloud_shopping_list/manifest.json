@@ -1,0 +1,13 @@
+{
+  "domain": "nextcloud_shopping_list",
+  "name": "Nextcloud Shopping List",
+  "codeowners": ["@otherworld-dev"],
+  "config_flow": true,
+  "dependencies": ["conversation"],
+  "documentation": "https://github.com/otherworld-dev/Shopping-List-HomeAssistant",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/otherworld-dev/Shopping-List-HomeAssistant/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}
