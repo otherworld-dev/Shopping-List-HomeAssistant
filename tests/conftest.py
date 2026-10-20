@@ -1,6 +1,7 @@
 """Shared fixtures."""
 
 import pytest
+from homeassistant.setup import async_setup_component
 
 SERVER = "https://cloud.example.com"
 BASE = SERVER + "/ocs/v2.php/apps/shopping_list/api/v1"
@@ -45,3 +46,9 @@ def item_json(**overrides) -> dict:
 def auto_enable_custom_integrations(enable_custom_integrations):
     """Load custom_components/ in every test."""
     return
+
+
+@pytest.fixture(autouse=True)
+async def setup_core(hass):
+    """Home Assistant's own integration, always loaded in a real install; conversation needs it."""
+    assert await async_setup_component(hass, "homeassistant", {})

@@ -1,0 +1,67 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Your Nextcloud",
+        "description": "The address of the Nextcloud server the Shopping List app runs on.",
+        "data": {
+          "server": "Server address"
+        },
+        "data_description": {
+          "server": "For example cloud.example.com. https is used if you leave it out."
+        }
+      },
+      "method": {
+        "title": "Sign in",
+        "menu_options": {
+          "auth": "Sign in through Nextcloud (recommended)",
+          "manual": "Enter an app password"
+        }
+      },
+      "auth": {
+        "title": "Grant access in Nextcloud",
+        "description": "Nextcloud will ask you to grant Home Assistant access. Once you do, this continues by itself."
+      },
+      "manual": {
+        "title": "App password",
+        "description": "Create an app password under Personal settings, Security in Nextcloud.",
+        "data": {
+          "login_name": "Login name",
+          "app_password": "App password"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not reach Nextcloud at that address.",
+      "invalid_auth": "Nextcloud refused the login name or app password."
+    },
+    "abort": {
+      "already_configured": "This Nextcloud account is already set up.",
+      "cannot_connect": "Could not reach Nextcloud.",
+      "invalid_auth": "Nextcloud refused the app password.",
+      "login_timeout": "Access was not granted in time. Please start again.",
+      "missing_app": "The Shopping List app is not installed on this Nextcloud.",
+      "server_too_old": "The Shopping List app on this Nextcloud is too old. Version {version} or later is needed.",
+      "reauth_successful": "Signed in again.",
+      "unique_id_mismatch": "That is a different Nextcloud account from the one set up here."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Shopping List options",
+        "data": {
+          "hidden_lists": "Lists to hide",
+          "via_label": "Label for changes"
+        },
+        "data_description": {
+          "hidden_lists": "Ticked lists don't show up in Home Assistant. Lists made later show up by themselves.",
+          "via_label": "Shown in the app against items Home Assistant adds or ticks. Leave it empty to show the account's own name."
+        }
+      }
+    },
+    "abort": {
+      "cannot_connect": "Could not reach Nextcloud."
+    }
+  }
+}
