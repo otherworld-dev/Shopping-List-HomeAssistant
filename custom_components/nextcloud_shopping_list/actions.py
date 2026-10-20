@@ -23,6 +23,11 @@ REFUSED = "Nextcloud refused that."
 NO_AMOUNT = "I didn't catch the amount."
 
 
+def is_failure(reply: str) -> bool:
+    """Whether a reply says nothing was done."""
+    return reply in (UNAVAILABLE, UNREACHABLE, REFUSED, NO_AMOUNT) or reply.startswith("I couldn't find ")
+
+
 @dataclass(frozen=True, slots=True)
 class ListRef:
     """One shown list of one set-up Nextcloud account."""
