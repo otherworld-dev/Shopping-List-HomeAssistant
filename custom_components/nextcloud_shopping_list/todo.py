@@ -68,6 +68,9 @@ class ShoppingListTodo(CoordinatorEntity[ShoppingListCoordinator], TodoListEntit
         | TodoListEntityFeature.UPDATE_TODO_ITEM
         | TodoListEntityFeature.DELETE_TODO_ITEM
         | TodoListEntityFeature.MOVE_TODO_ITEM
+        # The grey line is only shown, however the edit dialog sends it back with every
+        # change and Home Assistant refuses that unless this is set (#2)
+        | TodoListEntityFeature.SET_DESCRIPTION_ON_ITEM
     )
 
     def __init__(self, coordinator: ShoppingListCoordinator, entry: ShoppingListConfigEntry, list_id: int) -> None:
@@ -105,6 +108,10 @@ class ShoppingListTodo(CoordinatorEntity[ShoppingListCoordinator], TodoListEntit
             for item in ordered_items(data.items, data.areas)
         ]
 
+    def _description(self, item: Item) -> str | None:
+        data = self._data
+        return item_description(item, {area.id: area for area in data.areas} if data else {})
+
     def _item(self, uid: str | None) -> Item:
         data = self._data
         for item in data.items if data else []:
@@ -127,6 +134,10 @@ class ShoppingListTodo(CoordinatorEntity[ShoppingListCoordinator], TodoListEntit
 
     async def async_update_todo_item(self, item: TodoItem) -> None:
         current = self._item(item.uid)
+        if item.description and item.description != self._description(current):
+            raise HomeAssistantError(
+                "The grey line shows the item's area and who added it, and can't be changed here"
+            )
         checked = item.status == TodoItemStatus.COMPLETED
         api = self.coordinator.api
 
