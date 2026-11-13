@@ -151,3 +151,38 @@ async def test_renamed_list_renames_entity(hass: HomeAssistant, entry, server: F
     await hass.async_block_till_done()
 
     assert hass.states.get(ENTITY).attributes["friendly_name"] == "Big shop"
+
+
+async def test_edit_dialog_sending_the_grey_line_back_still_renames(hass: HomeAssistant, entry, server: FakeServer) -> None:
+    # The card's edit dialog sends the description back with the new name (#2)
+    await hass.services.async_call(
+        "todo",
+        "update_item",
+        {"item": "7", "rename": "3 pints Milk", "description": "Dairy · Home Assistant"},
+        target={"entity_id": ENTITY},
+        blocking=True,
+    )
+    assert server.calls == [("update_text", 4, 7, "3 pints Milk")]
+
+
+async def test_cleared_grey_line_is_ignored(hass: HomeAssistant, entry, server: FakeServer) -> None:
+    await hass.services.async_call(
+        "todo",
+        "update_item",
+        {"item": "7", "rename": "3 pints Milk", "description": ""},
+        target={"entity_id": ENTITY},
+        blocking=True,
+    )
+    assert server.calls == [("update_text", 4, 7, "3 pints Milk")]
+
+
+async def test_changed_grey_line_is_refused(hass: HomeAssistant, entry, server: FakeServer) -> None:
+    with pytest.raises(HomeAssistantError, match="area and who added"):
+        await hass.services.async_call(
+            "todo",
+            "update_item",
+            {"item": "7", "rename": "3 pints Milk", "description": "From the corner shop"},
+            target={"entity_id": ENTITY},
+            blocking=True,
+        )
+    assert server.calls == []
